@@ -557,7 +557,7 @@
     var self = this;
 
     // Throw an error if no source is provided.
-    if (!o.src || o.src.length === 0) {
+    if ((!o.src || o.src.length === 0) && !o.buffer) {
       console.error('An array of source files must be passed with any new Howl.');
       return;
     }
@@ -588,7 +588,8 @@
       self._preload = (typeof o.preload === 'boolean' || o.preload === 'metadata') ? o.preload : true;
       self._rate = o.rate || 1;
       self._sprite = o.sprite || {};
-      self._src = (typeof o.src !== 'string') ? o.src : [o.src];
+      self._src = o.buffer ? null : (typeof o.src !== 'string') ? o.src : [o.src];
+      self._buffer = o.buffer;
       self._volume = o.volume !== undefined ? o.volume : 1;
       self._xhr = {
         method: o.xhr && o.xhr.method ? o.xhr.method : 'GET',
@@ -663,52 +664,56 @@
         return;
       }
 
-      // Make sure our source is in an array.
-      if (typeof self._src === 'string') {
-        self._src = [self._src];
-      }
+      if (self._src) {
+        // Make sure our source is in an array.
+        if (typeof self._src === 'string') {
+          self._src = [self._src];
+        }
 
-      // Loop through the sources and pick the first one that is compatible.
-      for (var i=0; i<self._src.length; i++) {
-        var ext, str;
+        // Loop through the sources and pick the first one that is compatible.
+        for (var i=0; i<self._src.length; i++) {
+          var ext, str;
 
-        if (self._format && self._format[i]) {
-          // If an extension was specified, use that instead.
-          ext = self._format[i];
-        } else {
-          // Make sure the source is a string.
-          str = self._src[i];
-          if (typeof str !== 'string') {
-            self._emit('loaderror', null, 'Non-string found in selected audio sources - ignoring.');
-            continue;
+          if (self._format && self._format[i]) {
+            // If an extension was specified, use that instead.
+            ext = self._format[i];
+          } else {
+            // Make sure the source is a string.
+            str = self._src[i];
+            if (typeof str !== 'string') {
+              self._emit('loaderror', null, 'Non-string found in selected audio sources - ignoring.');
+              continue;
+            }
+
+            // Extract the file extension from the URL or base64 data URI.
+            ext = /^data:audio\/([^;,]+);/i.exec(str);
+            if (!ext) {
+              ext = /\.([^.]+)$/.exec(str.split('?', 1)[0]);
+            }
+
+            if (ext) {
+              ext = ext[1].toLowerCase();
+            }
           }
 
-          // Extract the file extension from the URL or base64 data URI.
-          ext = /^data:audio\/([^;,]+);/i.exec(str);
+          // Log a warning if no extension was found.
           if (!ext) {
-            ext = /\.([^.]+)$/.exec(str.split('?', 1)[0]);
+            console.warn('No file extension was found. Consider using the "format" property or specify an extension.');
           }
 
-          if (ext) {
-            ext = ext[1].toLowerCase();
+          // Check if this extension is available.
+          if (ext && Howler.codecs(ext)) {
+            url = self._src[i];
+            break;
           }
         }
 
-        // Log a warning if no extension was found.
-        if (!ext) {
-          console.warn('No file extension was found. Consider using the "format" property or specify an extension.');
+        if (!url) {
+          self._emit('loaderror', null, 'No codec support for selected audio sources.');
+          return;
         }
-
-        // Check if this extension is available.
-        if (ext && Howler.codecs(ext)) {
-          url = self._src[i];
-          break;
-        }
-      }
-
-      if (!url) {
-        self._emit('loaderror', null, 'No codec support for selected audio sources.');
-        return;
+      } else if (self._buffer) {
+        url = self._buffer;
       }
 
       self._src = url;
@@ -1784,8 +1789,11 @@
 
       // Delete this sound from the cache (if no other Howl is using it).
       var remCache = true;
+      var howl;
       for (i=0; i<Howler._howls.length; i++) {
-        if (Howler._howls[i]._src === self._src || self._src.indexOf(Howler._howls[i]._src) >= 0) {
+        howl = Howler._howls[i];
+        if (howl._src === self._src ||
+          (typeof self._src === 'string' && self._src.indexOf(howl._src) >= 0)) {
           remCache = false;
           break;
         }
@@ -2394,7 +2402,9 @@
       return;
     }
 
-    if (/^data:[^;]+;base64,/.test(url)) {
+    if (self._buffer) {
+      decodeAudioData(self._buffer, self);
+    } else if (/^data:[^;]+;base64,/.test(url)) {
       // Decode the base64 data URI without XHR, since some browsers don't support it.
       var data = atob(url.split(',')[1]);
       var dataView = new Uint8Array(data.length);
