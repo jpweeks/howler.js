@@ -1800,7 +1800,7 @@
       }
 
       if (cache && remCache) {
-        delete cache[self._src];
+        cache.delete(self._src)
       }
 
       // Clear global errors.
@@ -2146,7 +2146,7 @@
 
       // Setup the buffer source for playback.
       sound._node.bufferSource = Howler.ctx.createBufferSource();
-      sound._node.bufferSource.buffer = cache[self._src];
+      sound._node.bufferSource.buffer = cache.get(self._src);
 
       // Connect to the correct node.
       if (sound._panner) {
@@ -2382,7 +2382,7 @@
   /** Helper Methods **/
   /***************************************************************************/
 
-  var cache = {};
+  var cache = new Map();
 
   /**
    * Buffer a sound from URL, Data URI or cache and decode to audio source (Web Audio API).
@@ -2392,9 +2392,9 @@
     var url = self._src;
 
     // Check if the buffer has already been cached and use it instead.
-    if (cache[url]) {
+    if (cache.has(self._src)) {
       // Set the duration from the cache.
-      self._duration = cache[url].duration;
+      self._duration = cache.get(self._src).duration;
 
       // Load the sound into this Howl.
       loadSound(self);
@@ -2443,7 +2443,7 @@
           self._html5 = true;
           self._webAudio = false;
           self._sounds = [];
-          delete cache[url];
+          cache.delete(self._src);
           self.load();
         }
       };
@@ -2477,7 +2477,7 @@
     // Load the sound on success.
     var success = function(buffer) {
       if (buffer && self._sounds.length > 0) {
-        cache[self._src] = buffer;
+        cache.set(self._src, buffer);
         loadSound(self, buffer);
       } else {
         error();
