@@ -1,5 +1,5 @@
 /*!
- *  howler.js v2.2.3
+ *  howler.js v2.2.5
  *  howlerjs.com
  *
  *  (c) 2013-2020, James Simpson of GoldFire Studios
@@ -7,10 +7,6 @@
  *
  *  MIT License
  */
-
-(function() {
-
-  'use strict';
 
   /** Global Methods **/
   /***************************************************************************/
@@ -2566,32 +2562,6 @@
     Howler._setup();
   };
 
-  // Add support for AMD (Asynchronous Module Definition) libraries such as require.js.
-  if (typeof define === 'function' && define.amd) {
-    define([], function() {
-      return {
-        Howler: Howler,
-        Howl: Howl
-      };
-    });
-  }
+  export const Howler = Howler;
+  export const Howl = Howl;
 
-  // Add support for CommonJS libraries such as browserify.
-  if (typeof exports !== 'undefined') {
-    exports.Howler = Howler;
-    exports.Howl = Howl;
-  }
-
-  // Add to global in Node.js (for testing, etc).
-  if (typeof global !== 'undefined') {
-    global.HowlerGlobal = HowlerGlobal;
-    global.Howler = Howler;
-    global.Howl = Howl;
-    global.Sound = Sound;
-  } else if (typeof window !== 'undefined') {  // Define globally in case AMD is not available or unused.
-    window.HowlerGlobal = HowlerGlobal;
-    window.Howler = Howler;
-    window.Howl = Howl;
-    window.Sound = Sound;
-  }
-})();
