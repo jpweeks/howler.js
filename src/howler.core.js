@@ -1,5 +1,5 @@
 /*!
- *  howler.js v2.2.5
+ *  howler.js v2.2.6
  *  howlerjs.com
  *
  *  (c) 2013-2020, James Simpson of GoldFire Studios
@@ -2562,6 +2562,5 @@
     Howler._setup();
   };
 
-  export const Howler = Howler;
-  export const Howl = Howl;
+  export { Howler, Howl }
 
